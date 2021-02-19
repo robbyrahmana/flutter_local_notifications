@@ -6,6 +6,8 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:meta/meta.dart';
 import 'package:platform/platform.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 part 'src/platform_specifics/android/styles/style_information.dart';
 part 'src/platform_specifics/android/styles/default_style_information.dart';
@@ -20,3 +22,4 @@ part 'src/platform_specifics/ios/notification_details.dart';
 part 'src/notification_details.dart';
 part 'src/initialization_settings.dart';
 part 'src/flutter_local_notifications.dart';
+part 'src/callback_dispatcher.dart';

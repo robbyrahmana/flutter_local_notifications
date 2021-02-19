@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
@@ -32,7 +34,14 @@ class _MyAppState extends State<MyApp> {
         initializationSettingsAndroid, initializationSettingsIOS);
     flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
-        selectNotification: onSelectNotification);
+        selectNotification: onSelectNotification,
+        onHeadlessShowNotification: onShowNotification);
+  }
+
+  static Future onShowNotification(
+      int id, String title, String body, String payload) async {
+    print(
+        'showing notification id: $id, title: $title, body: $body, payload: $payload');
   }
 
   @override

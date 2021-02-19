@@ -45,6 +45,7 @@ public class ScheduledNotificationReceiver extends BroadcastReceiver {
             NotificationDetails notificationDetails  = gson.fromJson(notificationDetailsJson, type);
             Notification notification = FlutterLocalNotificationsPlugin.createNotification(context, notificationDetails);
             notificationManager.notify(notificationDetails.id, notification);
+            FlutterLocalNotificationsPlugin.showNotification(context, notificationDetails);
             if (repeat) {
                 return;
             }
