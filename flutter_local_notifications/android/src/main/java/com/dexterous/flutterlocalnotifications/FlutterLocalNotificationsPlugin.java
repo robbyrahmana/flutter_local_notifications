@@ -85,7 +85,19 @@ import io.flutter.view.FlutterMain;
  */
 @Keep
 public class FlutterLocalNotificationsPlugin implements MethodCallHandler, PluginRegistry.NewIntentListener, FlutterPlugin, ActivityAware {
-    private static final String SHARED_PREFERENCES_KEY = "notification_plugin_cache";
+    public static final String ON_SHOW_NOTIFICATION_METHOD_ARGS = "onShowNotificationArgs";
+    public static final String ON_SHOW_NOTIFICATION_METHOD = "onShowNotification";
+    public static final String CALLBACK_DISPATCHER_HANDLE_KEY = "callback_dispatch_handler";
+    public static final String SHOW_NOTIFICATION_ACTION = "SHOW_NOTIFICATION";
+    private static final String NOTIFICATION_ID = "notification_id";
+    private static final String NOTIFICATION_TITLE = "notification_title";
+    private static final String NOTIFICATION_BODY = "notification_body";
+    private static final String NOTIFICATION_PAYLOAD = "notification_payload";
+    private static final String CALLBACK_HANDLE = "callbackHandle";
+    private static final String CALLBACK_DISPATCHER = "callbackDispatcher";
+    private static final String SHOW_NOTIFICATION_CALLBACK = "showNotificationCallback";
+    private static final String SHOW_NOTIFICATION_CALLBACK_HANDLE_KEY = "show_notification_callback_handle";
+    public static final String SHARED_PREFERENCES_KEY = "notification_plugin_cache";
     private static final String DRAWABLE = "drawable";
     private static final String DEFAULT_ICON = "defaultIcon";
     private static final String SELECT_NOTIFICATION = "SELECT_NOTIFICATION";
@@ -796,6 +808,31 @@ public class FlutterLocalNotificationsPlugin implements MethodCallHandler, Plugi
         } else {
             notificationManagerCompat.notify(notificationDetails.id, notification);
         }
+
+        SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREFERENCES_KEY, Context.MODE_PRIVATE);
+        long callbackHandle =  sharedPreferences.getLong(SHOW_NOTIFICATION_CALLBACK_HANDLE_KEY, 0);
+        HashMap<String, Object> callbackArgs = new HashMap<>();
+        callbackArgs.put(CALLBACK_HANDLE, callbackHandle);
+        callbackArgs.put(NOTIFICATION_ID, notificationDetails.id);
+        callbackArgs.put(NOTIFICATION_TITLE, notificationDetails.title);
+        callbackArgs.put(NOTIFICATION_BODY, notificationDetails.body);
+        callbackArgs.put(NOTIFICATION_PAYLOAD, notificationDetails.payload);
+        /*if(registrar == null || registrar.activity() == null) {
+            if (sharedPreferences.contains(SHOW_NOTIFICATION_CALLBACK_HANDLE_KEY)) {
+                Intent intent = new Intent(context, NotificationService.class);
+                intent.setAction(SHOW_NOTIFICATION_ACTION);
+                intent.putExtra(ON_SHOW_NOTIFICATION_METHOD_ARGS, callbackArgs);
+                NotificationService.enqueueWork(context, intent);
+            }
+        } else {
+           // channel.in
+        }*/
+        if (sharedPreferences.contains(SHOW_NOTIFICATION_CALLBACK_HANDLE_KEY)) {
+            Intent intent = new Intent(context, NotificationService.class);
+            intent.setAction(SHOW_NOTIFICATION_ACTION);
+            intent.putExtra(ON_SHOW_NOTIFICATION_METHOD_ARGS, callbackArgs);
+            NotificationService.enqueueWork(context, intent);
+        }
     }
 
     static void zonedScheduleNextNotification(Context context, NotificationDetails notificationDetails) {
@@ -1080,6 +1117,14 @@ public class FlutterLocalNotificationsPlugin implements MethodCallHandler, Plugi
         SharedPreferences sharedPreferences = applicationContext.getSharedPreferences(SHARED_PREFERENCES_KEY, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(DEFAULT_ICON, defaultIcon);
+
+        Long callbackDispatcherHandle = (Long) arguments.get(CALLBACK_DISPATCHER);
+        editor.putLong(CALLBACK_DISPATCHER_HANDLE_KEY, callbackDispatcherHandle);
+        if(arguments.containsKey(SHOW_NOTIFICATION_CALLBACK)) {
+            Long callbackHandle = (Long) arguments.get(SHOW_NOTIFICATION_CALLBACK);
+            editor.putLong(SHOW_NOTIFICATION_CALLBACK_HANDLE_KEY, callbackHandle);
+        }
+        
         tryCommittingInBackground(editor, 3);
         result.success(true);
     }

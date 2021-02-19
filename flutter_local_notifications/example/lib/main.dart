@@ -94,7 +94,7 @@ Future<void> main() async {
     }
     selectedNotificationPayload = payload;
     selectNotificationSubject.add(payload);
-  });
+  }, onShowNotification: onShowNotification);
   runApp(
     MaterialApp(
       initialRoute: initialRoute,
@@ -110,6 +110,11 @@ Future<void> _configureLocalTimeZone() async {
   tz.initializeTimeZones();
   final String timeZoneName = await platform.invokeMethod('getTimeZoneName');
   tz.setLocalLocation(tz.getLocation(timeZoneName));
+}
+
+Future<void> onShowNotification(
+    int id, String title, String body, String payload) async {
+  debugPrint('showing notification payload: $payload');
 }
 
 class PaddedRaisedButton extends StatelessWidget {

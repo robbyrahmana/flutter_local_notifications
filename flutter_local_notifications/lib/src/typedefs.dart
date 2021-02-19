@@ -10,3 +10,8 @@ typedef SelectNotificationCallback = Future<dynamic> Function(String payload);
 /// This property is only applicable to iOS versions older than 10.
 typedef DidReceiveLocalNotificationCallback = Future<dynamic> Function(
     int id, String title, String body, String payload);
+
+/// Signature of callback passed to [initialize] that is triggered
+/// when the notification is shown
+typedef ShowNotificationCallback = Future<dynamic> Function(
+    int id, String title, String body, String payload);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart';
 import 'package:timezone/timezone.dart';
 
+import 'callback_dispatcher.dart';
 import 'helpers.dart';
 import 'platform_specifics/android/active_notification.dart';
 import 'platform_specifics/android/enums.dart';
@@ -78,9 +80,29 @@ class AndroidFlutterLocalNotificationsPlugin
   Future<bool> initialize(
     AndroidInitializationSettings initializationSettings, {
     SelectNotificationCallback onSelectNotification,
+    ShowNotificationCallback onShowNotification,
   }) async {
     _onSelectNotification = onSelectNotification;
     _channel.setMethodCallHandler(_handleMethod);
+
+    // Handling for show notification callback
+    final CallbackHandle callbackDispatcherHandle =
+        PluginUtilities.getCallbackHandle(callbackDispatcher);
+    final int callback = callbackDispatcherHandle.toRawHandle();
+    if (onShowNotification != null) {
+      final CallbackHandle showNotificationCallbackHandle =
+          PluginUtilities.getCallbackHandle(onShowNotification);
+      final int showNotificationCallback =
+          showNotificationCallbackHandle.toRawHandle();
+      final AndroidInitializationSettings initializationCallbackSettings =
+          AndroidInitializationSettings(
+        initializationSettings.defaultIcon,
+        callbackDispatcher: callback,
+        showNotificationCallback: showNotificationCallback,
+      );
+      return await _channel.invokeMethod(
+          'initialize', initializationCallbackSettings.toMap());
+    }
     return await _channel.invokeMethod(
         'initialize', initializationSettings.toMap());
   }
