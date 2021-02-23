@@ -114,7 +114,7 @@ Future<void> _configureLocalTimeZone() async {
 
 Future<void> onShowNotification(
     int id, String title, String body, String payload) async {
-  debugPrint('showing notification payload: $payload');
+  debugPrint('main: showing notification payload: $payload');
 }
 
 class PaddedRaisedButton extends StatelessWidget {

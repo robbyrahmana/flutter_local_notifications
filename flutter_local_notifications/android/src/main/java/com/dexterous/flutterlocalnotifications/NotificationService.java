@@ -11,33 +11,44 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Keep;
 import androidx.core.app.JobIntentService;
 
+import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.embedding.engine.dart.DartExecutor;
+import io.flutter.embedding.engine.dart.DartExecutor.DartCallback;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.PluginRegistry.PluginRegistrantCallback;
 import io.flutter.view.FlutterCallbackInformation;
 import io.flutter.view.FlutterMain;
 import io.flutter.view.FlutterNativeView;
 import io.flutter.view.FlutterRunArguments;
 
-public class NotificationService extends JobIntentService implements MethodChannel.MethodCallHandler {
+@Keep
+public class NotificationService extends JobIntentService implements MethodCallHandler {
     private static final String TAG = "NotificationService";
     private static final String BACKGROUND_CHANNEL = "dexterous.com/flutter/local_notifications_background";
     private static final int JOB_ID = (int)UUID.randomUUID().getMostSignificantBits();
     private static final String NOTIFICATIONSERVICE_INITIALIZED_METHOD = "NotificationService.initialized";
     private static AtomicBoolean started = new AtomicBoolean(false);
     private static PluginRegistrantCallback pluginRegistrantCallback;
+    private static FlutterEngine sBackgroundFlutterEngine;
     private MethodChannel backgroundChannel;
     private ArrayDeque onShowNotificationQueue = new ArrayDeque<Map<String, Object>>();
-    private FlutterNativeView backgroundFlutterView;
     
     public static void enqueueWork(Context context, Intent intent) {
         enqueueWork(context, NotificationService.class, JOB_ID, intent);
     }
 
+    public static void setPluginRegistrant(PluginRegistrantCallback callback) {
+        pluginRegistrantCallback = callback;
+    }
+
     private void startNotificationService(Context context) {
         synchronized (started) {
+            FlutterMain.startInitialization(context);
             FlutterMain.ensureInitializationComplete(context, null);
             long callbackHandle = context.getSharedPreferences(
                     FlutterLocalNotificationsPlugin.SHARED_PREFERENCES_KEY,
@@ -48,25 +59,19 @@ public class NotificationService extends JobIntentService implements MethodChann
                 Log.e(TAG, "Fatal: failed to find callback");
                 return;
             }
-            backgroundFlutterView = new FlutterNativeView(context, true);
-            FlutterRunArguments args = new FlutterRunArguments();
-            args.bundlePath = FlutterMain.findAppBundlePath(context);
-            args.entrypoint = callbackInfo.callbackName;
-            args.libraryPath = callbackInfo.callbackLibraryPath;
-            backgroundFlutterView.runFromBundle(args);
-            if (pluginRegistrantCallback != null) {
-                pluginRegistrantCallback.registerWith(backgroundFlutterView.getPluginRegistry());
-            }
-
+            sBackgroundFlutterEngine = new FlutterEngine(context);
+            DartCallback args = new DartCallback(
+                    context.getAssets(),
+                    FlutterMain.findAppBundlePath(context),
+                    callbackInfo
+            );
+            // Start running callback dispatcher code in our background FlutterEngine instance.
+            sBackgroundFlutterEngine.getDartExecutor().executeDartCallback(args);
+            Log.i(TAG, "NotificationService BackgroundFlutterEngine created");
         }
-        backgroundChannel = new MethodChannel(backgroundFlutterView, BACKGROUND_CHANNEL);
+        backgroundChannel = new MethodChannel(sBackgroundFlutterEngine.getDartExecutor().getBinaryMessenger(), BACKGROUND_CHANNEL);
         backgroundChannel.setMethodCallHandler(this);
         Log.i(TAG, "NotificationService started");
-    }
-
-
-    public static void setPluginRegistrant(PluginRegistrantCallback callback) {
-        pluginRegistrantCallback = callback;
     }
 
     @Override
@@ -97,7 +102,6 @@ public class NotificationService extends JobIntentService implements MethodChann
                 break;
         }
     }
-
 
     @Override
     public void onMethodCall(MethodCall call, MethodChannel.Result result) {

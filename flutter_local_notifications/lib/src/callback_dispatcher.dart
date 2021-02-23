@@ -11,7 +11,7 @@ void callbackDispatcher() {
   WidgetsFlutterBinding.ensureInitialized();
 
   _backgroundChannel.setMethodCallHandler((MethodCall call) async {
-    debugPrint('received method call');
+    debugPrint('Dart: received method call');
     final dynamic args = call.arguments;
     /*switch (call.method) {
       case 'onShowNotification':
@@ -38,6 +38,6 @@ void callbackDispatcher() {
     callback(notificationId, notificationTitle, notificationBody,
         notificationPayload);
   });
-  debugPrint('notification dispatcher started');
+  debugPrint('Dart: notification dispatcher started');
   _backgroundChannel.invokeMethod('NotificationService.initialized');
 }
